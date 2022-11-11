@@ -1,11 +1,61 @@
-import {Pressable, StyleSheet, Text, TextInput, View} from 'react-native';
-import React, {useState} from 'react';
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+
+import React, {useEffect, useState} from 'react';
+
+import {ACC_NAME, APP_NAME} from '../../Constant';
+
+import {Voximplant} from 'react-native-voximplant';
+import {useNavigation} from '@react-navigation/native';
 
 const LoginScreen = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const signIn = () => {
-    console.warn('sign in');
+  const navigation = useNavigation();
+  const voximplant = Voximplant.getInstance();
+
+  useEffect(() => {
+    const connect = async () => {
+      try {
+        const status = await voximplant.getClientState();
+        console.log(status);
+        if (status === Voximplant.ClientState.DISCONNECTED) {
+          await voximplant.connect();
+        } else if (status === Voximplant.ClientState.LOGGED_IN) {
+          return redirectHome();
+        }
+      } catch (error) {}
+    };
+    connect();
+  }, []);
+
+  const signIn = async () => {
+    try {
+      const fqUsername = `${username}@${APP_NAME}.${ACC_NAME}.voximplant.com`;
+      await voximplant.login(fqUsername, password);
+
+      redirectHome();
+    } catch (e) {
+      console.log(e.name + e.message);
+      Alert.alert(e.name, `Error Code: ${e.code}`);
+    }
+  };
+
+  const redirectHome = () => {
+    navigation.reset({
+      index: 0,
+      routes: [
+        {
+          name: 'Contacts',
+        },
+      ],
+    });
   };
   return (
     <View style={styles.page}>
@@ -13,8 +63,8 @@ const LoginScreen = () => {
         value={username}
         onChangeText={setUsername}
         placeholder="username"
-        autoCapitalize='none'
-        style={styles.input}        
+        autoCapitalize="none"
+        style={styles.input}
       />
       <TextInput
         value={password}
