@@ -3,7 +3,7 @@ import React, {useState} from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const CallActionScreen = () => {
+const CallActionScreen = ({onHangup}) => {
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicroOn, setIsMicroOn] = useState(true);
 
@@ -16,9 +16,7 @@ const CallActionScreen = () => {
   const onToggleMicrophone = () => {
     setIsMicroOn(prev => !prev);
   };
-  const onHangup = () => {
-    console.warn('onHangup');
-  };
+
 
   return (
     <View style={styles.buttonsContainer}>

@@ -9,11 +9,24 @@ import {
 import React, {useEffect, useState} from 'react';
 import contacts from '../../../assets/data/contacts.json';
 import {useNavigation} from '@react-navigation/native';
+import {Voximplant} from 'react-native-voximplant';
 
 const ContactsScreen = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredContacts, setFilteredContacts] = useState(contacts);
   const navigation = useNavigation();
+
+  const voximplant = Voximplant.getInstance();
+
+  useEffect(() => {
+    voximplant.on(Voximplant.ClientEvents.IncomingCall, incomingCallEvent => {
+      navigation.navigate('IncomingCall', {call: incomingCallEvent.call});
+    });
+
+    return () => {
+      voximplant.off(Voximplant.ClientEvents.IncomingCallEvent);
+    };
+  }, []);
 
   useEffect(() => {
     const newContacts = contacts.filter(contact =>
