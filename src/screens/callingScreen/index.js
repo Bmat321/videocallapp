@@ -28,6 +28,7 @@ const CallingScreen = () => {
   const route = useRoute();
   const {user, call: incomingCall, isIncomingCall} = route?.params;
   const call = useRef(incomingCall);
+  const endpoint = useRef(null);
   const goBack = () => {
     navigation.pop();
   };
@@ -75,6 +76,8 @@ const CallingScreen = () => {
 
       const answerCall = async () => {
         subScribeToCallEvents();
+        endpoint.current = call.current.getEndpoints()[0];
+        subscribeToEndpointEvent();
         call.current.answer(callSettings);
       };
 
@@ -92,6 +95,27 @@ const CallingScreen = () => {
         call.current.on(Voximplant.CallEvents.Disconnected, callEvent => {
           navigation.navigate('Contacts');
         });
+
+        call.current.on(
+          Voximplant.CallEvents.LocalVideoStreamAdded,
+          callEvent => {
+            setLocalVideoStreamId(callEvent.videoStream.id);
+          },
+        );
+
+        call.current.on(Voximplant.CallEvents.EndpointAdded, callEvent => {
+          endpoint.current = callEvent.endpoint;
+          subscribeToEndpointEvent();
+        });
+      };
+
+      const subscribeToEndpointEvent = async () => {
+        endpoint.current.on(
+          Voximplant.EndpointEvents.RemoteVideoStreamAdded,
+          endpointEvent => {
+            setRemoteVideoStreamId(endpointEvent.videoStream.id);
+          },
+        );
       };
 
       const showError = reason => {
@@ -114,9 +138,10 @@ const CallingScreen = () => {
         call.current.off(Voximplant.CallEvents.ProgressToneStart);
         call.current.off(Voximplant.CallEvents.Connected);
         call.current.off(Voximplant.CallEvents.Disconnected);
+        // call.current.off(Voximplant.CallEvents.LocalVideoStreamAdded);
       };
     } catch (error) {}
-  }, [permissionGranted, call.current]);
+  }, [permissionGranted, call, endpoint]);
 
   const onHangup = () => {
     call.current.hangup();
@@ -127,6 +152,16 @@ const CallingScreen = () => {
       <Pressable onPress={goBack} style={styles.backButton}>
         <Ionicons name="chevron-back" color="white" size={25} />
       </Pressable>
+      {/* <View style={styles.videoView}>
+      </View> */}
+      <Voximplant.VideoView
+        videoStreamId={remoteVideoStreamId}
+        style={styles.remoteVideo}
+      />
+      <Voximplant.VideoView
+        videoStreamId={localVideoStreamId}
+        style={styles.localVideo}
+      />
       <View style={styles.cameraPreview}>
         <Text style={styles.name}>{user?.user_display_name}</Text>
         <Text style={styles.phoneNumber}>{callStatus}</Text>
@@ -140,30 +175,50 @@ export default CallingScreen;
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: '#7b4e80',
     height: '100%',
-    position: 'relative',
+    backgroundColor: '#7b4e80',
   },
   cameraPreview: {
-    backgroundColor: '#7b4e80',
     flex: 1,
-    paddingTop: 5,
-    paddingHorizontal: 10,
     alignItems: 'center',
+    paddingTop: 10,
+    paddingHorizontal: 10,
+  },
+  localVideo: {
+    width: 100,
+    height: 150,
+    backgroundColor: '#ffff6e',
+
+    borderRadius: 10,
+
+    position: 'absolute',
+    right: 10,
+    top: 100,
+  },
+  remoteVideo: {
+    backgroundColor: '#7b4e80',
+    borderRadius: 10,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 100,
   },
   name: {
-    color: 'white',
     fontSize: 30,
     fontWeight: 'bold',
-    marginTop: 5,
-    marginBottom: 10,
+    color: 'white',
+    marginTop: 50,
+    marginBottom: 15,
   },
   phoneNumber: {
-    fontSize: 28,
+    fontSize: 20,
     color: 'white',
   },
-
   backButton: {
-    marginTop: 10,
+    position: 'absolute',
+    top: 50,
+    left: 10,
+    zIndex: 10,
   },
 });
